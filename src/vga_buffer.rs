@@ -1,8 +1,8 @@
+use alloc::string::String;
 use core::fmt;
 use volatile::Volatile;
 use lazy_static::lazy_static;
 use spin::Mutex;
-use x86_64::instructions::interrupts;
 
 #[macro_export]
 macro_rules! print {
@@ -82,15 +82,64 @@ lazy_static! {
 }
 
 pub struct Writer {
-    column_position: usize,
-    row_position: usize,
+    pub column_position: usize,
+    pub row_position: usize,
     color_code: ColorCode,
     buffer: &'static mut Buffer
 }
 
 impl Writer {
+    pub fn row_into_string(&self, row: usize) -> String {
+        let mut result: String = String::new();
+
+        for col in 0..BUFFER_WIDTH {
+            let screen_char = self.buffer.chars[row][col].read();
+
+            if screen_char.ascii_character == 0x0 {
+                break;
+            }
+
+            result.push(char::from(screen_char.ascii_character));
+        }
+
+        result
+    }
+
     pub fn change_color_code(&mut self, color_code: ColorCode) {
         self.color_code = color_code;
+    }
+
+    pub fn clear(&mut self) {
+        let blank = ScreenChar {
+            ascii_character: 0x0,
+            color_code: self.color_code
+        };
+
+        for row in 0..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
+                self.buffer.chars[row][col].write(blank);
+            }
+        }
+
+        self.row_position = 0;
+        self.column_position = 0;
+    }
+
+    pub fn move_left(&mut self) {
+        if 0 < self.column_position {
+            self.default_current();
+            self.column_position -= 1;
+            self.highlight_current();
+        }
+    }
+
+    pub fn move_right(&mut self) {
+
+        if self.buffer.chars[self.row_position][self.column_position - 1].read().ascii_character != 0x0 && self.column_position != 0 {
+            self.default_current();
+            self.column_position += 1;
+            self.highlight_current();
+        }
     }
 
     pub fn backspace(&mut self) {
@@ -99,17 +148,22 @@ impl Writer {
             color_code: self.color_code
         };
 
-        let mut row = self.row_position;
-        let mut col = self.column_position;
-
-        self.buffer.chars[row][col - 1].write(blank);
-
         if 0 < self.column_position {
+            self.default_current();
+
+            let row = self.row_position;
+            let col = self.column_position;
+
+            self.buffer.chars[row][col - 1].write(blank);
             self.column_position -= 1;
+
+            self.highlight_current();
         }
     }
 
     pub fn write_byte(&mut self, byte: u8) {
+       self.default_current();
+
         match byte {
             b'\n' => self.new_line(),
             byte => {
@@ -130,6 +184,26 @@ impl Writer {
                 self.column_position += 1;
             }
         }
+
+        self.highlight_current();
+    }
+
+    fn default_current(&mut self) {
+        let defaulted = ScreenChar {
+            ascii_character: self.buffer.chars[self.row_position][self.column_position].read().ascii_character,
+            color_code: ColorCode::new(Color::White, Color::Black)
+        };
+
+        self.buffer.chars[self.row_position][self.column_position].write(defaulted)
+    }
+
+    fn highlight_current(&mut self) {
+        let defaulted = ScreenChar {
+            ascii_character: self.buffer.chars[self.row_position][self.column_position].read().ascii_character,
+            color_code: ColorCode::new(Color::Black, Color::White)
+        };
+
+        self.buffer.chars[self.row_position][self.column_position].write(defaulted)
     }
 
     fn new_line(&mut self) {
@@ -167,7 +241,7 @@ impl Writer {
         for byte in s.bytes() {
             match  byte {
                 0x20..=0x7E | b'\n' => self.write_byte(byte),
-                _ => self.write_byte(0xfe)
+                _ => self.write_byte(0xFE)
             }
         }
     }

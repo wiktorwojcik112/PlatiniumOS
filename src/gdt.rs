@@ -2,13 +2,12 @@ use x86_64::VirtAddr;
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::structures::gdt::{GlobalDescriptorTable, Descriptor, SegmentSelector};
 use lazy_static::lazy_static;
-use x86_64::registers::segmentation::CS;
+use x86_64::registers::segmentation::{CS, Segment};
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
 pub fn init() {
     use x86_64::instructions::tables::load_tss;
-    use x86_64::instructions::segmentation::{CS, Segment};
 
     GDT.0.load();
 
