@@ -30,10 +30,6 @@ use crate::vga_buffer::{Color, ColorCode, WRITER};
 
 extern crate alloc;
 
-extern {
-    fn qemuShutdown();
-}
-
 entry_point!(kernel_main);
 
 pub static OS_VERSION: &str = "1.0";

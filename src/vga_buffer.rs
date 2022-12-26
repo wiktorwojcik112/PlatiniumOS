@@ -134,7 +134,6 @@ impl Writer {
     }
 
     pub fn move_right(&mut self) {
-
         if self.buffer.chars[self.row_position][self.column_position - 1].read().ascii_character != 0x0 && self.column_position != 0 {
             self.default_current();
             self.column_position += 1;
@@ -226,7 +225,7 @@ impl Writer {
         self.column_position = 0;
     }
 
-    fn clear_row(&mut self, row: usize) {
+    pub fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: 0x0,
             color_code: self.color_code
