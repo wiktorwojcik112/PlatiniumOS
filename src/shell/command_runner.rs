@@ -25,6 +25,7 @@ impl CommandRunner {
         result.insert(String::from("calc"), Box::new(CalcCommand { }));
         result.insert(String::from("set"), Box::new(SetCommand { }));
         result.insert(String::from("color"), Box::new(ColorCommand { }));
+        result.insert(String::from("help"), Box::new(HelpCommand { }));
 
         result
     }

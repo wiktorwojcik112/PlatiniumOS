@@ -61,7 +61,6 @@ pub fn run() {
 
     // Remove input indicator.
     input.remove(0);
-    input.remove(0);
 
     SHELL_HISTORY.lock().history.push(input.clone());
     let length = SHELL_HISTORY.lock().history.len() as u64;
